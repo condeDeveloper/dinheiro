@@ -1,0 +1,44 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # O juiz principal e uma INVARIANTE, e nao uma comparacao: a soma das
+      # partes de um rateio e exatamente o todo. E ela e verificada
+      # exaustivamente -- todas as quantias de -1.000 a +1.000 centavos,
+      # repartidas em todos os numeros de partes de 1 a 50. Sao 100.050 rateios.
+      #
+      # O segundo juiz e o decimal do .NET, que e exato; o terceiro e o
+      # Math.Round, nos dois modos em que ele existe -- e e por isso que o
+      # arredondamento aqui e escrito a mao em vez de delegar.
+      - name: testes
+        run: dotnet test testes/Dinheiro.Testes/Dinheiro.Testes.csproj -c Release --nologo -v q
+
+      # As medidas rodam para REGISTRAR numeros. Nao ha asseveracao de tempo:
+      # teste de relogio em maquina compartilhada falha sem nada ter piorado.
+      - name: o erro do ponto flutuante, acontecendo
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release --nologo -- double
+
+      - name: o vies de cada modo de arredondamento
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release --nologo -- vies
+
+      - name: dividir R$ 100,00 entre tres
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release --nologo -- rateio
